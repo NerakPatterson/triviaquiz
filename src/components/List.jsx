@@ -8,8 +8,7 @@ function List({ settings }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const fetchQuestions = useCallback(async () => {
+   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     setApiError("");
     setQuestionData(null);
@@ -20,7 +19,7 @@ function List({ settings }) {
 
     for (let diff of difficulties) {
       try {
-        const url = `https://opentdb.com/api.php?amount=10&category=${settings.category}&difficulty=${diff}&type=multiple`;
+        const url = `https://opentdb.com/api.php?amount=5&category=${settings.category}&difficulty=${diff}&type=multiple`;
         const response = await fetch(url);
         const data = await response.json();
 
@@ -44,7 +43,7 @@ function List({ settings }) {
     // If both attempts fail
     setApiError("No questions available for this category. Try another.");
     setLoading(false);
-  });
+  }, [settings]);
 
   useEffect(() => {
     fetchQuestions();

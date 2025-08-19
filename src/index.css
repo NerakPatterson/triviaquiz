@@ -5,7 +5,10 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-image: url("https://www.pixelstalk.net/wp-content/uploads/2016/04/MLP-backgrounds-free-for-desktop.jpg");
+  background-size: cover;
+  background-repeat: none;
+  background-position: center;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

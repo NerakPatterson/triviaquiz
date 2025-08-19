@@ -1,50 +1,53 @@
 import { useState, useEffect, useCallback } from "react";
 
 function List({ settings }) {
-  const [questionData, setQuestionData] = useState(null);
+  const [questions, setQuestions] = useState([]);   // all questions
+  const [currentIndex, setCurrentIndex] = useState(0); // which question we’re on
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [error, setError] = useState("");
   const [apiError, setApiError] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     setApiError("");
-    setQuestionData(null);
+    setQuestions([]);
+    setCurrentIndex(0);
     setSelectedAnswer("");
     setResult(null);
 
-    const difficulties = [settings.difficulty, "easy"];
+    try {
+      const response = await fetch(
+        `https://opentdb.com/api.php?amount=5&category=${settings.category}&difficulty=${settings.difficulty}&type=multiple`
+      );
+      const data = await response.json();
 
-    for (let diff of difficulties) {
-      try {
-        const url = `https://opentdb.com/api.php?amount=10&category=${settings.category}&difficulty=${diff}&type=multiple`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.response_code === 0 && data.results.length > 0) {
-          const q = data.results[0]; // pick first question
-          const answers = [...q.incorrect_answers, q.correct_answer].sort(() => Math.random() - 0.5);
-
-          setQuestionData({
-            question: q.question,
-            correctAnswer: q.correct_answer,
-            answers,
-          });
-          setLoading(false);
-          return;
-        }
-      } catch (err) {
-        console.error(err);
+      if (data.response_code !== 0 || data.results.length === 0) {
+        setApiError("No questions available. Try another category/difficulty.");
+        setLoading(false);
+        return;
       }
-    }
 
-    // If both attempts fail
-    setApiError("No questions available for this category. Try another.");
-    setLoading(false);
-  });
+      const formatted = data.results.map((q) => {
+        const answers = [...q.incorrect_answers, q.correct_answer].sort(
+          () => Math.random() - 0.5
+        );
+        return {
+          question: q.question,
+          correctAnswer: q.correct_answer,
+          answers,
+        };
+      });
+
+      setQuestions(formatted);
+    } catch (err) {
+      console.error("API fetch failed:", err);
+      setApiError("Failed to fetch questions. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [settings]);
 
   useEffect(() => {
     fetchQuestions();
@@ -58,19 +61,28 @@ function List({ settings }) {
     }
     setError("");
 
-    const isCorrect = selectedAnswer === questionData.correctAnswer;
+    const isCorrect = selectedAnswer === questions[currentIndex].correctAnswer;
     setResult({
       isCorrect,
-      correctAnswer: questionData.correctAnswer,
+      correctAnswer: questions[currentIndex].correctAnswer,
     });
   };
 
-  const handleRestart = () => {
-    fetchQuestions();
+  const handleNext = () => {
+    setResult(null);
+    setSelectedAnswer("");
+
+    if (currentIndex + 1 < questions.length) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setApiError("🎉 You’ve reached the end of the quiz!");
+    }
   };
 
   if (loading) return <p>Loading question...</p>;
   if (apiError) return <p style={{ color: "red" }}>{apiError}</p>;
+
+  const currentQuestion = questions[currentIndex];
 
   if (result) {
     return (
@@ -81,18 +93,20 @@ function List({ settings }) {
         {!result.isCorrect && (
           <p>
             The correct answer was:{" "}
-            <span dangerouslySetInnerHTML={{ __html: result.correctAnswer }} />
+            <span
+              dangerouslySetInnerHTML={{ __html: result.correctAnswer }}
+            />
           </p>
         )}
-        <button onClick={handleRestart}>Next Question</button>
+        <button onClick={handleNext}>Next Question</button>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <h3 dangerouslySetInnerHTML={{ __html: questionData.question }} />
-      {questionData.answers.map((answer, index) => (
+      <h3 dangerouslySetInnerHTML={{ __html: currentQuestion.question }} />
+      {currentQuestion.answers.map((answer, index) => (
         <div key={index}>
           <label>
             <input

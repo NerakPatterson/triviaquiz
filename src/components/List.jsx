@@ -9,6 +9,8 @@ function List({ settings, onRestart }) {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [feedback, setFeedback] = useState("");   // ✅ feedback text
+  const [showFeedback, setShowFeedback] = useState(false); // ✅ controls visibility
 
   // Fetch questions with fallback difficulty
   const fetchQuestions = useCallback(async () => {
@@ -19,8 +21,12 @@ function List({ settings, onRestart }) {
     setSelectedAnswer("");
     setScore(0);
     setFinished(false);
+    setFeedback("");
+    setShowFeedback(false);
 
-    const difficulties = [settings.difficulty, "easy"];
+    const difficulties = settings.difficulty === "easy"
+      ? ["easy"]
+      : [settings.difficulty, "easy"];
 
     for (let diff of difficulties) {
       try {
@@ -65,11 +71,20 @@ function List({ settings, onRestart }) {
     const currentQ = questions[currentIndex];
     if (selectedAnswer === currentQ.correctAnswer) {
       setScore((prev) => prev + 1);
+      setFeedback("✅ Correct!");
+    } else {
+      setFeedback(`❌ Wrong! Correct answer: ${currentQ.correctAnswer}`);
     }
 
+    setShowFeedback(true); // ✅ show feedback
+  };
+
+  const handleNext = () => {
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedAnswer("");
+      setFeedback("");
+      setShowFeedback(false);
     } else {
       setFinished(true);
     }
@@ -85,7 +100,9 @@ function List({ settings, onRestart }) {
         <h2>
           {settings.name}, you scored {score} / {questions.length}
         </h2>
-        <button onClick={fetchQuestions}>Play Again (same settings)</button>
+        <button onClick={() => fetchQuestions()}>
+          Play Again (same settings)
+        </button>
         <button onClick={onRestart}>Back to Selection</button>
       </div>
     );
@@ -103,6 +120,7 @@ function List({ settings, onRestart }) {
               type="radio"
               name="answer"
               value={answer}
+              disabled={showFeedback} // disable after submit
               checked={selectedAnswer === answer}
               onChange={() => setSelectedAnswer(answer)}
             />
@@ -111,10 +129,17 @@ function List({ settings, onRestart }) {
         </div>
       ))}
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <br />
-      <button type="submit">
-        {currentIndex + 1 === questions.length ? "Finish" : "Next"}
-      </button>
+
+      {!showFeedback ? (
+        <button type="submit">Submit</button>
+      ) : (
+        <>
+          <p>{feedback}</p>
+          <button type="button" onClick={handleNext}>
+            {currentIndex + 1 === questions.length ? "Finish Quiz" : "Next Question"}
+          </button>
+        </>
+      )}
     </form>
   );
 }

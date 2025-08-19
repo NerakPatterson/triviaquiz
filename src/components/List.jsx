@@ -10,6 +10,7 @@ function List({ settings, onRestart }) {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
+  // Fetch questions with fallback difficulty
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
     setApiError("");
@@ -41,11 +42,11 @@ function List({ settings, onRestart }) {
           return;
         }
       } catch (err) {
-        console.error(err);
+        console.error("API fetch failed:", err);
       }
     }
 
-    setApiError("No questions available for this category. Try another.");
+    setApiError("No questions available. Try another category/difficulty.");
     setLoading(false);
   }, [settings]);
 
